@@ -9,9 +9,9 @@
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-#
+# 
 # Ansible is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# but WITHOUT ANY WARRANTY; witho ut even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
@@ -315,7 +315,7 @@ def probe_all_peers(hosts, peers, myhostname):
         if host not in peers:
             probe(host, myhostname)
 
-def create_volume(name, stripe, replica, disperse, redundancy, transport, hosts, bricks, force):
+def create_volume(name, stripe, replica,arbiter, disperse, redundancy, transport, hosts, bricks, force):
     args = [ 'volume', 'create' ]
     args.append(name)
     if stripe:
@@ -324,6 +324,9 @@ def create_volume(name, stripe, replica, disperse, redundancy, transport, hosts,
     if replica:
         args.append('replica')
         args.append(str(replica))
+    if arbiter:
+        args.append('arbiter')
+        args.append(str(arbiter))
     if disperse:
         args.append('disperse')
         args.append(str(disperse))
@@ -348,7 +351,7 @@ def stop_volume(name):
 def set_volume_option(name, option, parameter):
     run_gluster([ 'volume', 'set', name, option, parameter ])
 
-def add_bricks(name, new_bricks, stripe, replica, force):
+def add_bricks(name, new_bricks, stripe, arbiter, replica, force):
     args = [ 'volume', 'add-brick', name ]
     if stripe:
         args.append('stripe')
@@ -356,6 +359,9 @@ def add_bricks(name, new_bricks, stripe, replica, force):
     if replica:
         args.append('replica')
         args.append(str(replica))
+    if arbiter:
+        args.append('arbiter')
+        args.append(str(arbiter))
     args.extend(new_bricks)
     if force:
         args.append('force')
@@ -383,6 +389,8 @@ def main():
             host=dict(required=False, default=None),
             stripes=dict(required=False, default=None, type='int'),
             replicas=dict(required=False, default=None, type='int'),
+            arbiter=dict(required=False, default=None, type='int'),
+
             disperses=dict(required=False, default=None, type='int'),
             redundancies=dict(required=False, default=None, type='int'),
             transport=dict(required=False, default='tcp', choices=[ 'tcp', 'rdma', 'tcp,rdma' ]),
@@ -407,6 +415,7 @@ def main():
     brick_paths = module.params['bricks']
     stripes = module.params['stripes']
     replicas = module.params['replicas']
+    arbiter = module.params['arbiter']
     disperses = module.params['disperses']
     redundancies = module.params['redundancies']
     transport = module.params['transport']
@@ -456,7 +465,7 @@ def main():
 
         # create if it doesn't exist
         if volume_name not in volumes:
-            create_volume(volume_name, stripes, replicas, disperses, redundancies, transport, cluster, brick_paths, force)
+            create_volume(volume_name, stripes, replicas,arbiter, disperses, redundancies, transport, cluster, brick_paths, force)
             volumes = get_volumes()
             changed = True
 
@@ -482,7 +491,7 @@ def main():
                     removed_bricks.append(brick)
 
             if new_bricks:
-                add_bricks(volume_name, new_bricks, stripes, replicas, force)
+                add_bricks(volume_name, new_bricks, stripes, replicas,arbiter, force)
                 changed = True
 
             # handle quotas
